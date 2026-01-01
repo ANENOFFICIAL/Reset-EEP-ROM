@@ -1,55 +1,49 @@
-# Prerequisites
-*.d
+#include <EEPROM.h>
+#include <LittleFS.h>
+#include <ESP8266WiFi.h>
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+#define EEPROM_SIZE 512
+#define RESET_BUTTON_PIN D5  // Ganti ke pin tombol yang kamu pakai
 
-# Linker output
-*.ilk
-*.map
-*.exp
+void factoryReset() {
+  Serial.println("Memulai factory reset...");
 
-# Precompiled Headers
-*.gch
-*.pch
+  // 1. Hapus EEPROM
+  EEPROM.begin(EEPROM_SIZE);
+  for (int i = 0; i < EEPROM_SIZE; i++) {
+    EEPROM.write(i, 0xFF);  // Atau 0
+  }
+  EEPROM.commit();
+  Serial.println("EEPROM dihapus.");
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+  // 2. Hapus WiFi
+  WiFi.disconnect(true);  // Hapus setting WiFi
+  delay(500);
+  Serial.println("WiFi settings dihapus.");
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+  // 3. Format LittleFS
+  LittleFS.begin();
+  LittleFS.format();
+  Serial.println("LittleFS diformat.");
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+  Serial.println("Factory reset selesai.");
+}
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+  pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);  // Tombol aktif LOW
 
-# debug information files
-*.dwo
+  // Cek jika tombol ditekan saat boot (tahan tombol saat reset)
+  if (digitalRead(RESET_BUTTON_PIN) == LOW) {
+    factoryReset();
+  } else {
+    Serial.println("Tidak ada reset. Jalan normal.");
+  }
+}
+
+void loop() {
+  // Program biasa kamu di sini, jika tidak mereset
+}
+
